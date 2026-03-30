@@ -1,0 +1,98 @@
+{
+  "theme": "dark",
+  "archetype": "Archetype 2: The Performance Pro (Tactical & Precision)",
+  "typography": {
+    "fonts": {
+      "headings": "Chivo",
+      "body": "Inter",
+      "data": "IBM Plex Mono"
+    },
+    "hierarchy": {
+      "h1": "text-4xl sm:text-5xl font-black tracking-tighter uppercase",
+      "h2": "text-2xl sm:text-3xl font-bold tracking-tight",
+      "h3": "text-xl sm:text-2xl font-bold",
+      "data_readout": "text-lg sm:text-2xl font-mono tracking-widest text-[#00FF41]",
+      "body": "text-base font-medium text-neutral-300",
+      "label": "text-xs font-bold tracking-[0.2em] uppercase text-neutral-500"
+    }
+  },
+  "colors": {
+    "background": {
+      "base": "#0A0A0A",
+      "surface": "#141414",
+      "overlay": "rgba(0, 0, 0, 0.6)"
+    },
+    "primary": {
+      "default": "#FF4500",
+      "hover": "#FF5722",
+      "foreground": "#FFFFFF"
+    },
+    "secondary": {
+      "default": "#007AFF",
+      "hover": "#3395FF",
+      "foreground": "#FFFFFF"
+    },
+    "accents": {
+      "ar_reticle": "#00FF41",
+      "measurement_line": "#007AFF",
+      "pin_drop": "#FF4500"
+    },
+    "text": {
+      "primary": "#FFFFFF",
+      "secondary": "#A3A3A3",
+      "muted": "#737373"
+    },
+    "border": {
+      "default": "rgba(255, 255, 255, 0.1)",
+      "focus": "#FF4500",
+      "neon_glow": "rgba(0, 255, 65, 0.5)"
+    }
+  },
+  "spacing_and_layout": {
+    "philosophy": "Mobile-first tactical HUD. Maximize camera viewport by pushing controls to the edges and bottom. Use floating glassmorphic panels for non-obstructive data display.",
+    "grid_system": "The Control Room Grid: High density, gap-4, full-width bottom drawers for actions.",
+    "surface_strategies": {
+      "hud_panels": "Crystal Glassmorphism: bg-black/60 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] rounded-xl p-4",
+      "action_bars": "Solid flat panels at bottom: bg-[#0A0A0A] border-t border-white/10 p-6 rounded-t-3xl",
+      "data_pills": "Tactical outline: bg-transparent border border-white/20 rounded-full px-3 py-1 font-mono text-xs text-white"
+    }
+  },
+  "motion_and_interactions": {
+    "hover_states": "Tactical crisp transitions. Hover scales slightly (+1.02) and boosts border brightness to white/40.",
+    "active_states": "High contrast feedback. Active pins glow with shadow-[0_0_12px_rgba(255,69,0,0.8)].",
+    "ar_interactions": "Reticle shrinks on valid plane detection. Line drawing uses a neon trailing effect."
+  },
+  "components_strategy": {
+    "buttons": "Large touch targets (min h-14) for outdoor/gloved use. Primary button uses solid #FF4500, no shadow. Secondary buttons are outline (border-white/20).",
+    "inputs": "Shadcn based, but heavily customized to look tactical. bg-black border-white/20 text-white focus:ring-2 focus:ring-[#FF4500].",
+    "navigation": "Floating bottom tab bar or side rail (landscape). Icon-heavy, text-light.",
+    "map_view": "Dark mode ESRI satellite tiles. Overlays use bright neon colors (Volt Blue, Orange) for extreme contrast against natural terrain."
+  },
+  "media": {
+    "image_urls": {
+      "login_background": {
+        "url": "https://images.pexels.com/photos/12261593/pexels-photo-12261593.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Abstract satellite topography view. Use as a darkened background for the Google OAuth login screen."
+      },
+      "empty_state_map": {
+        "url": "https://images.unsplash.com/photo-1669092557499-093cb88dc249?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAxODF8MHwxfHNlYXJjaHwyfHxzYXRlbGxpdGUlMjB2aWV3JTIwdG9wb2dyYXBoeSUyMGFic3RyYWN0JTIwZGFya3xlbnwwfHx8fDE3NzQ4MjkyODh8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Abstract dark terrain to use behind map placeholders or empty states."
+      }
+    }
+  },
+  "accessibility": {
+    "contrast": "Crucial for outdoor visibility. All text on HUDs must have text-shadow to ensure readability against bright sky or dark ground camera feeds.",
+    "touch_targets": "Minimum 48x48px for all interactive HUD elements.",
+    "testing_attributes": "All buttons, tabs, and map markers MUST use data-testid attributes (e.g., data-testid='ar-drop-pin-btn')."
+  },
+  "instructions_to_main_agent": [
+    "1. Do not use default white/light UI. The app must be dark mode by default to save battery and reduce glare for outdoor surveying.",
+    "2. For the AR Camera view, the background MUST be transparent to allow the video feed to show through. Wrap UI elements in absolute positioned glassmorphic containers.",
+    "3. Use `lucide-react` for iconography (Crosshair, Map, Compass, MapPin).",
+    "4. For data readouts (coordinates, distance, bearing), ALWAYS use the IBM Plex Mono font class to ensure numerical alignment.",
+    "5. Implement a bottom sheet or floating action button layout for mobile ergonomics. Do not place critical actions at the top of the screen.",
+    "6. Use Tailwind text-shadow utilities (or custom classes) on HUD text so it doesn't get lost when the camera points at white clouds or bright objects.",
+    "7. For mapping, use React-Leaflet or similar with a dark satellite tile layer. Ensure the map UI matches the tactical aesthetic (no standard Google Maps white borders).",
+    "8. Expose data-testid on every interactive element to facilitate automated testing."
+  ]
+}
