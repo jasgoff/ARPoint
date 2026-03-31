@@ -100,6 +100,16 @@ AR surveying/mapping PWA application with:
 - Distance/bearing calculations
 - Mobile-optimized dark UI
 
+### Phase 2: Enhanced AR (2026-03-31)
+- **Glass marble 3D compass** with bubble level
+- Multi-axis compass tilt based on device orientation
+- N always points to true North
+- **AR Pin markers** visible in camera viewport
+- Pins within 2000ft (configurable) shown as AR objects
+- Distance and bearing to each pin displayed
+- **Settings toggles** for compass and AR pins visibility
+- Configurable AR pin range (330ft - 6,560ft)
+
 ## Prioritized Backlog
 
 ### P0 (Critical)

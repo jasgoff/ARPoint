@@ -131,6 +131,12 @@
   transform: translate(-50%, -100%) scale(1.1);
 }
 
+/* AR Pin markers in viewport */
+.ar-pin-marker {
+  transition: left 0.15s ease-out, top 0.15s ease-out, transform 0.15s ease-out;
+  will-change: transform, left, top;
+}
+
 /* Mode indicator */
 .mode-indicator {
   position: absolute;

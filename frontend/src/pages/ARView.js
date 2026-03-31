@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
 import Compass3D from '@/components/ar/Compass3D';
 import {
@@ -9,13 +9,13 @@ import {
   Save,
   X,
   Check,
-  Camera
+  Camera,
+  Navigation
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const ARView = () => {
   const videoRef = useRef(null);
-  const canvasRef = useRef(null);
   const streamRef = useRef(null);
   const {
     position,
@@ -36,10 +36,12 @@ const ARView = () => {
     addPin,
     addMeasurement,
     addTrace,
+    getPins,
     calculateDistance,
     calculateBearing,
     formatDistance,
-    formatBearing
+    formatBearing,
+    settings
   } = useApp();
 
   const [cameraActive, setCameraActive] = useState(false);
@@ -48,6 +50,66 @@ const ARView = () => {
   const [saveName, setSaveName] = useState('');
   const [currentDistance, setCurrentDistance] = useState(null);
   const [currentBearing, setCurrentBearing] = useState(null);
+  const [nearbyPins, setNearbyPins] = useState([]);
+
+  // Load and filter nearby pins (within range, default 2000ft = 610m)
+  useEffect(() => {
+    if (!position || !settings.showARPins) {
+      setNearbyPins([]);
+      return;
+    }
+
+    const allPins = getPins();
+    const range = settings.arPinRange || 610; // 2000ft in meters
+
+    const pinsInRange = allPins
+      .map(pin => {
+        const distance = calculateDistance(position, {
+          latitude: pin.latitude,
+          longitude: pin.longitude
+        });
+        const bearing = calculateBearing(position, {
+          latitude: pin.latitude,
+          longitude: pin.longitude
+        });
+        return { ...pin, distance, bearing };
+      })
+      .filter(pin => pin.distance <= range)
+      .sort((a, b) => a.distance - b.distance);
+
+    setNearbyPins(pinsInRange);
+  }, [position, getPins, calculateDistance, calculateBearing, settings.showARPins, settings.arPinRange]);
+
+  // Calculate AR position for a pin based on bearing relative to device heading
+  const getARPosition = useCallback((pinBearing, pinDistance) => {
+    // Calculate the angle difference between pin bearing and device heading
+    let angleDiff = pinBearing - (heading || 0);
+    
+    // Normalize to -180 to 180
+    while (angleDiff > 180) angleDiff -= 360;
+    while (angleDiff < -180) angleDiff += 360;
+
+    // Only show pins within field of view (~120 degrees)
+    const fov = 60; // Half of field of view
+    if (Math.abs(angleDiff) > fov) {
+      return null; // Out of view
+    }
+
+    // Calculate horizontal position (percentage from center)
+    // -60° = left edge, 0° = center, +60° = right edge
+    const xPercent = 50 + (angleDiff / fov) * 50;
+
+    // Calculate vertical position based on distance (closer = lower, farther = higher)
+    // This simulates perspective
+    const maxRange = settings.arPinRange || 610;
+    const distanceRatio = pinDistance / maxRange;
+    const yPercent = 30 + distanceRatio * 30; // 30% to 60% from top
+
+    // Calculate size based on distance (closer = larger)
+    const scale = 1.5 - distanceRatio;
+
+    return { x: xPercent, y: yPercent, scale, angleDiff };
+  }, [heading, settings.arPinRange]);
 
   // Start camera
   useEffect(() => {
@@ -231,6 +293,84 @@ const ARView = () => {
     }
   }, [mode, savePinDrop, saveMeasurement, saveTrace]);
 
+  // Render AR pin markers
+  const renderARPins = useMemo(() => {
+    if (!settings.showARPins || nearbyPins.length === 0) return null;
+
+    return nearbyPins.map(pin => {
+      const arPos = getARPosition(pin.bearing, pin.distance);
+      if (!arPos) return null; // Out of field of view
+
+      return (
+        <div
+          key={pin.id}
+          className="ar-pin-marker absolute pointer-events-none"
+          style={{
+            left: `${arPos.x}%`,
+            top: `${arPos.y}%`,
+            transform: `translate(-50%, -100%) scale(${arPos.scale})`,
+            zIndex: Math.round(100 - pin.distance),
+            transition: 'left 0.1s ease-out, top 0.1s ease-out'
+          }}
+        >
+          {/* Pin icon */}
+          <div 
+            className="relative"
+            style={{
+              filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.5))'
+            }}
+          >
+            <svg width="40" height="52" viewBox="0 0 40 52" fill="none">
+              <path 
+                d="M20 0C8.954 0 0 8.954 0 20C0 35 20 52 20 52C20 52 40 35 40 20C40 8.954 31.046 0 20 0Z" 
+                fill="#FF4500"
+              />
+              <circle cx="20" cy="20" r="8" fill="white"/>
+            </svg>
+            
+            {/* Direction indicator */}
+            {Math.abs(arPos.angleDiff) > 5 && (
+              <div 
+                className="absolute -top-1 left-1/2 -translate-x-1/2"
+                style={{
+                  transform: `translateX(-50%) rotate(${arPos.angleDiff > 0 ? 45 : -45}deg)`
+                }}
+              >
+                <Navigation 
+                  className="w-4 h-4 text-white" 
+                  style={{ 
+                    filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))'
+                  }}
+                />
+              </div>
+            )}
+          </div>
+          
+          {/* Pin info label */}
+          <div 
+            className="absolute left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap"
+            style={{ top: '100%' }}
+          >
+            <div 
+              className="glass-panel rounded-lg px-2 py-1 text-center"
+              style={{
+                background: 'rgba(0,0,0,0.8)',
+                border: '1px solid rgba(255,69,0,0.5)'
+              }}
+            >
+              <div className="text-white text-xs font-bold truncate max-w-[100px]">
+                {pin.name}
+              </div>
+              <div className="text-[#00FF41] text-[10px] font-mono">
+                {formatDistance(pin.distance)}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    });
+  }, [nearbyPins, settings.showARPins, getARPosition, formatDistance]);
+
   if (cameraError) {
     return (
       <div className="camera-error" data-testid="camera-error">
@@ -255,63 +395,80 @@ const ARView = () => {
         className="absolute inset-0 w-full h-full object-cover"
       />
 
-      {/* AR overlay canvas */}
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 w-full h-full pointer-events-none"
-      />
-
       {/* HUD Overlay */}
       <div className="ar-hud">
-        {/* Compass (top center) */}
-        <div className="compass-hud">
-          <Compass3D heading={heading} orientation={orientation} />
-        </div>
+        {/* Compass (top center) - conditionally rendered */}
+        {settings.showCompass && (
+          <div className="compass-hud">
+            <Compass3D heading={heading} orientation={orientation} />
+          </div>
+        )}
 
         {/* Coordinates (top left) */}
-        <div className="coords-hud glass-panel rounded-xl p-3">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-white/50 uppercase tracking-wider w-8">LAT</span>
-              <span className="data-readout text-sm">
-                {position ? position.latitude.toFixed(6) : '---.------'}°
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-white/50 uppercase tracking-wider w-8">LNG</span>
-              <span className="data-readout text-sm">
-                {position ? position.longitude.toFixed(6) : '---.------'}°
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-white/50 uppercase tracking-wider w-8">ALT</span>
-              <span className="data-readout text-sm">
-                {altitude ? `${altitude.toFixed(1)}m` : '---.-m'}
-              </span>
-            </div>
-            {accuracy && (
+        {settings.showCoordinates && (
+          <div className="coords-hud glass-panel rounded-xl p-3">
+            <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-white/50 uppercase tracking-wider w-8">ACC</span>
-                <span className="data-readout text-sm text-yellow-400">
-                  ±{accuracy.toFixed(1)}m
+                <span className="text-[10px] text-white/50 uppercase tracking-wider w-8">LAT</span>
+                <span className="data-readout text-sm">
+                  {position ? position.latitude.toFixed(6) : '---.------'}°
                 </span>
               </div>
-            )}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-white/50 uppercase tracking-wider w-8">LNG</span>
+                <span className="data-readout text-sm">
+                  {position ? position.longitude.toFixed(6) : '---.------'}°
+                </span>
+              </div>
+              {settings.showAltitude && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-white/50 uppercase tracking-wider w-8">ALT</span>
+                  <span className="data-readout text-sm">
+                    {altitude ? `${altitude.toFixed(1)}m` : '---.-m'}
+                  </span>
+                </div>
+              )}
+              {accuracy && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-white/50 uppercase tracking-wider w-8">ACC</span>
+                  <span className="data-readout text-sm text-yellow-400">
+                    ±{accuracy.toFixed(1)}m
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Mode indicator (top right) */}
+        {/* Nearby pins count indicator */}
+        {settings.showARPins && nearbyPins.length > 0 && (
+          <div 
+            className="absolute top-4 right-4 glass-panel rounded-lg px-3 py-2"
+            style={{ background: 'rgba(0,0,0,0.7)' }}
+          >
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-[#FF4500]" />
+              <span className="text-white text-sm font-bold">{nearbyPins.length}</span>
+              <span className="text-white/50 text-xs">nearby</span>
+            </div>
+          </div>
+        )}
+
+        {/* Mode indicator */}
         {mode !== 'view' && (
           <div className={`mode-indicator glass-panel rounded-lg ${
             mode === 'pin' ? 'text-[#FF4500]' :
             mode === 'measure' ? 'text-[#007AFF]' :
             'text-[#00FF41]'
-          }`}>
+          }`} style={{ top: settings.showCompass ? '140px' : '16px', right: '16px' }}>
             {mode === 'pin' && 'PIN DROP MODE'}
             {mode === 'measure' && (measureStart ? 'TAP END POINT' : 'TAP START POINT')}
             {mode === 'trace' && (isTracing ? 'TRACING...' : 'TRACE MODE')}
           </div>
         )}
+
+        {/* AR Pin Markers */}
+        {renderARPins}
 
         {/* Center crosshair */}
         {(mode === 'pin' || mode === 'measure') && (

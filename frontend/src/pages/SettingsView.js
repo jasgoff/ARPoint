@@ -11,13 +11,18 @@ import {
   User,
   LogOut,
   Info,
-  Smartphone
+  Smartphone,
+  Eye,
+  Navigation
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const SettingsView = () => {
   const { settings, updateSettings } = useApp();
   const { user, logout } = useAuth();
+
+  // Convert meters to feet for display
+  const rangeInFeet = Math.round((settings.arPinRange || 610) * 3.28084);
 
   return (
     <div className="settings-panel" data-testid="settings-view">
@@ -40,6 +45,70 @@ const SettingsView = () => {
             <p className="text-white/50 text-sm">{user?.email || ''}</p>
           </div>
         </div>
+      </div>
+
+      {/* AR View Settings */}
+      <div className="mb-6">
+        <h4 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-3 px-1">
+          AR View
+        </h4>
+        
+        <div className="settings-item">
+          <div className="flex items-center gap-3">
+            <Compass className="w-5 h-5 text-[#00FF41]" />
+            <div>
+              <Label className="text-white font-medium">Show Compass</Label>
+              <p className="text-xs text-white/40 mt-0.5">Display 3D compass in AR view</p>
+            </div>
+          </div>
+          <Switch
+            data-testid="toggle-compass"
+            checked={settings.showCompass}
+            onCheckedChange={(checked) => updateSettings({ showCompass: checked })}
+          />
+        </div>
+
+        <div className="settings-item">
+          <div className="flex items-center gap-3">
+            <MapPin className="w-5 h-5 text-[#FF4500]" />
+            <div>
+              <Label className="text-white font-medium">Show AR Pins</Label>
+              <p className="text-xs text-white/40 mt-0.5">Display nearby pins in camera view</p>
+            </div>
+          </div>
+          <Switch
+            data-testid="toggle-ar-pins"
+            checked={settings.showARPins}
+            onCheckedChange={(checked) => updateSettings({ showARPins: checked })}
+          />
+        </div>
+
+        {settings.showARPins && (
+          <div className="settings-item flex-col items-start">
+            <div className="flex items-center gap-3 w-full mb-3">
+              <Navigation className="w-5 h-5 text-[#007AFF]" />
+              <div className="flex-1">
+                <Label className="text-white font-medium">AR Pin Range</Label>
+                <p className="text-xs text-white/40 mt-0.5">
+                  Show pins within {rangeInFeet} ft ({settings.arPinRange || 610} m)
+                </p>
+              </div>
+            </div>
+            <input
+              type="range"
+              min="100"
+              max="2000"
+              step="100"
+              value={settings.arPinRange || 610}
+              onChange={(e) => updateSettings({ arPinRange: Number(e.target.value) })}
+              className="w-full accent-[#007AFF]"
+            />
+            <div className="flex justify-between w-full text-xs text-white/40 mt-1">
+              <span>330 ft</span>
+              <span>6,560 ft</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Units Settings */}
@@ -92,7 +161,7 @@ const SettingsView = () => {
         
         <div className="settings-item">
           <div className="flex items-center gap-3">
-            <MapPin className="w-5 h-5 text-[#FF4500]" />
+            <Eye className="w-5 h-5 text-[#FF4500]" />
             <div>
               <Label className="text-white font-medium">Show Coordinates</Label>
               <p className="text-xs text-white/40 mt-0.5">Display GPS coordinates in AR view</p>
@@ -107,7 +176,7 @@ const SettingsView = () => {
 
         <div className="settings-item">
           <div className="flex items-center gap-3">
-            <Compass className="w-5 h-5 text-[#00FF41]" />
+            <Compass className="w-5 h-5 text-[#007AFF]" />
             <div>
               <Label className="text-white font-medium">Show Altitude</Label>
               <p className="text-xs text-white/40 mt-0.5">Display altitude readings</p>
@@ -117,21 +186,6 @@ const SettingsView = () => {
             data-testid="toggle-altitude"
             checked={settings.showAltitude}
             onCheckedChange={(checked) => updateSettings({ showAltitude: checked })}
-          />
-        </div>
-
-        <div className="settings-item">
-          <div className="flex items-center gap-3">
-            <Compass className="w-5 h-5 text-[#007AFF]" />
-            <div>
-              <Label className="text-white font-medium">3D Compass Mode</Label>
-              <p className="text-xs text-white/40 mt-0.5">Tilt compass based on device orientation</p>
-            </div>
-          </div>
-          <Switch
-            data-testid="toggle-3d-compass"
-            checked={settings.compassMode === '3d'}
-            onCheckedChange={(checked) => updateSettings({ compassMode: checked ? '3d' : '2d' })}
           />
         </div>
       </div>
@@ -188,7 +242,7 @@ const SettingsView = () => {
             <Smartphone className="w-5 h-5 text-white/60" />
             <div>
               <Label className="text-white font-medium">AR Survey PWA</Label>
-              <p className="text-xs text-white/40 mt-0.5">Version 1.0.0</p>
+              <p className="text-xs text-white/40 mt-0.5">Version 1.1.0</p>
             </div>
           </div>
         </div>

@@ -14,6 +14,9 @@ const DEFAULT_SETTINGS = {
   compassMode: '3d', // '2d' or '3d'
   showCoordinates: true,
   showAltitude: true,
+  showCompass: true, // New: toggle compass visibility
+  showARPins: true, // New: toggle AR pin markers
+  arPinRange: 610, // Range in meters (2000ft = ~610m)
   mapType: 'satellite' // 'satellite' or 'street'
 };
 
