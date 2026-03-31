@@ -12,10 +12,24 @@ const CompassDemo = () => {
   useEffect(() => {
     if (!autoRotate) return;
     const interval = setInterval(() => {
-      setHeading(prev => (prev + 1) % 360);
-    }, 50);
+      setHeading(prev => (prev + 0.5) % 360);
+    }, 30);
     return () => clearInterval(interval);
   }, [autoRotate]);
+
+  // Simulate gentle swaying motion when auto-rotating
+  useEffect(() => {
+    if (!autoRotate) return;
+    const interval = setInterval(() => {
+      const time = Date.now() / 1000;
+      setOrientation({
+        alpha: heading,
+        beta: Math.sin(time * 0.8) * 15,
+        gamma: Math.cos(time * 0.6) * 12
+      });
+    }, 50);
+    return () => clearInterval(interval);
+  }, [autoRotate, heading]);
 
   // Simulate device orientation
   const handleMouseMove = (e) => {
@@ -43,7 +57,7 @@ const CompassDemo = () => {
       <p className="text-white/50 text-sm mb-12">with Bubble Level</p>
 
       {/* Compass */}
-      <div className="mb-20">
+      <div className="mb-32">
         <Compass3D heading={heading} orientation={orientation} />
       </div>
 

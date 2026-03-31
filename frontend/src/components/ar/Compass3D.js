@@ -4,17 +4,21 @@ const Compass3D = ({ heading = 0, orientation = { alpha: 0, beta: 0, gamma: 0 } 
   // Normalize heading to 0-360
   const normalizedHeading = ((heading % 360) + 360) % 360;
   
-  // Clamp beta and gamma for bubble position (-45 to 45 degrees range)
-  const clampedBeta = Math.max(-45, Math.min(45, orientation.beta || 0));
-  const clampedGamma = Math.max(-45, Math.min(45, orientation.gamma || 0));
+  // Get orientation values with defaults
+  const beta = orientation.beta || 0;   // Front-back tilt (-180 to 180)
+  const gamma = orientation.gamma || 0; // Left-right tilt (-90 to 90)
+  
+  // Clamp for visual limits
+  const clampedBeta = Math.max(-60, Math.min(60, beta));
+  const clampedGamma = Math.max(-60, Math.min(60, gamma));
   
   // Calculate bubble position (inverted - bubble goes opposite to tilt)
-  const bubbleX = (clampedGamma / 45) * 35; // Max 35px offset
-  const bubbleY = (clampedBeta / 45) * 35;
+  const bubbleX = (clampedGamma / 60) * 30;
+  const bubbleY = (clampedBeta / 60) * 30;
   
   // Check if level (within 3 degrees)
-  const isLevel = Math.abs(clampedBeta) < 3 && Math.abs(clampedGamma) < 3;
-  
+  const isLevel = Math.abs(beta) < 3 && Math.abs(gamma) < 3;
+
   // Get direction label
   const getDirectionLabel = (deg) => {
     const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
@@ -23,53 +27,78 @@ const Compass3D = ({ heading = 0, orientation = { alpha: 0, beta: 0, gamma: 0 } 
     return directions[index];
   };
 
-  // Cardinal directions for the compass ring
-  const cardinalMarks = useMemo(() => {
-    const marks = [];
-    for (let i = 0; i < 36; i++) {
-      const angle = i * 10;
-      const isCardinal = angle % 90 === 0;
-      const isIntercardinal = angle % 45 === 0 && !isCardinal;
-      marks.push({
-        angle,
-        isCardinal,
-        isIntercardinal,
-        label: isCardinal ? ['N', 'E', 'S', 'W'][angle / 90] : null
-      });
-    }
-    return marks;
-  }, []);
+  // Determine which device edge/corner the compass is pointing to
+  const getDeviceEdgePointer = (heading, beta, gamma) => {
+    // Combine heading with tilt to determine 3D direction
+    const effectiveHeading = heading;
+    
+    // Determine primary direction based on heading
+    let hDir = '';
+    if (effectiveHeading >= 337.5 || effectiveHeading < 22.5) hDir = 'TOP';
+    else if (effectiveHeading >= 22.5 && effectiveHeading < 67.5) hDir = 'TOP-RIGHT';
+    else if (effectiveHeading >= 67.5 && effectiveHeading < 112.5) hDir = 'RIGHT';
+    else if (effectiveHeading >= 112.5 && effectiveHeading < 157.5) hDir = 'BOTTOM-RIGHT';
+    else if (effectiveHeading >= 157.5 && effectiveHeading < 202.5) hDir = 'BOTTOM';
+    else if (effectiveHeading >= 202.5 && effectiveHeading < 247.5) hDir = 'BOTTOM-LEFT';
+    else if (effectiveHeading >= 247.5 && effectiveHeading < 292.5) hDir = 'LEFT';
+    else if (effectiveHeading >= 292.5 && effectiveHeading < 337.5) hDir = 'TOP-LEFT';
+    
+    // Add vertical component based on tilt
+    let vDir = '';
+    if (beta > 20) vDir = ' ↗ FRONT';
+    else if (beta < -20) vDir = ' ↙ BACK';
+    
+    return { edge: hDir, tilt: vDir };
+  };
 
-  // 3D transform based on device orientation
-  const sphereTransform = `
-    perspective(800px)
-    rotateX(${Math.min(25, Math.max(-25, clampedBeta * 0.4))}deg)
-    rotateY(${Math.min(20, Math.max(-20, clampedGamma * 0.3))}deg)
+  const devicePointer = getDeviceEdgePointer(normalizedHeading, clampedBeta, clampedGamma);
+
+  // 3D marble transform - full multi-axis movement
+  const marbleTransform = `
+    perspective(600px)
+    rotateX(${clampedBeta * 0.6}deg)
+    rotateY(${-clampedGamma * 0.6}deg)
+    rotateZ(${-normalizedHeading}deg)
+  `;
+
+  // Inner compass disc transform (counter-rotates to stay readable)
+  const innerTransform = `
+    rotateZ(${normalizedHeading}deg)
   `;
 
   return (
     <div
       data-testid="compass-3d"
       className="relative"
-      style={{ width: '140px', height: '140px' }}
+      style={{ width: '160px', height: '160px' }}
     >
-      {/* Outer glass sphere container */}
+      {/* Glass marble outer sphere */}
       <div
         className="absolute inset-0 rounded-full"
         style={{
-          background: 'linear-gradient(145deg, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.4) 100%)',
-          boxShadow: `
-            0 0 40px rgba(0, 255, 65, 0.15),
-            inset 0 -8px 20px rgba(0, 0, 0, 0.6),
-            inset 0 8px 20px rgba(255, 255, 255, 0.1),
-            0 4px 20px rgba(0, 0, 0, 0.5)
+          background: `
+            radial-gradient(circle at 25% 25%, 
+              rgba(255,255,255,0.4) 0%, 
+              rgba(255,255,255,0.1) 20%,
+              rgba(120,200,255,0.05) 40%,
+              rgba(0,50,100,0.1) 60%,
+              rgba(0,20,40,0.3) 100%
+            )
           `,
-          border: '2px solid rgba(255, 255, 255, 0.15)',
-          transform: sphereTransform,
-          transformStyle: 'preserve-3d'
+          boxShadow: `
+            0 20px 60px rgba(0,0,0,0.5),
+            0 0 80px rgba(0,150,255,0.1),
+            inset 0 -20px 40px rgba(0,0,0,0.4),
+            inset 0 20px 40px rgba(255,255,255,0.15),
+            inset 0 0 60px rgba(0,100,200,0.1)
+          `,
+          border: '1px solid rgba(255,255,255,0.2)',
+          transform: marbleTransform,
+          transformStyle: 'preserve-3d',
+          transition: 'transform 0.1s ease-out'
         }}
       >
-        {/* Inner sphere with compass face */}
+        {/* Inner liquid/glass layer */}
         <div
           className="absolute rounded-full"
           style={{
@@ -77,205 +106,277 @@ const Compass3D = ({ heading = 0, orientation = { alpha: 0, beta: 0, gamma: 0 } 
             left: '8px',
             right: '8px',
             bottom: '8px',
-            background: 'radial-gradient(circle at 30% 30%, #1a1a1a 0%, #0a0a0a 70%, #050505 100%)',
-            boxShadow: `
-              inset 0 4px 15px rgba(0, 0, 0, 0.8),
-              inset 0 -2px 10px rgba(255, 255, 255, 0.05)
+            background: `
+              radial-gradient(circle at 30% 30%,
+                rgba(200,230,255,0.15) 0%,
+                rgba(100,180,255,0.08) 30%,
+                rgba(0,50,100,0.2) 70%,
+                rgba(0,20,50,0.4) 100%
+              )
             `,
-            border: '1px solid rgba(255, 255, 255, 0.08)'
+            boxShadow: `
+              inset 0 10px 30px rgba(255,255,255,0.1),
+              inset 0 -10px 30px rgba(0,0,0,0.3)
+            `,
+            border: '1px solid rgba(255,255,255,0.1)'
           }}
         >
-          {/* Compass rose / degree markings - rotates with heading */}
-          <svg
-            className="absolute inset-0 w-full h-full"
-            viewBox="0 0 100 100"
-            style={{ transform: `rotate(${-normalizedHeading}deg)` }}
-          >
-            {/* Degree tick marks */}
-            {cardinalMarks.map(({ angle, isCardinal, isIntercardinal, label }) => {
-              const radAngle = (angle - 90) * Math.PI / 180;
-              const outerR = 46;
-              const innerR = isCardinal ? 36 : isIntercardinal ? 40 : 43;
-              const x1 = 50 + outerR * Math.cos(radAngle);
-              const y1 = 50 + outerR * Math.sin(radAngle);
-              const x2 = 50 + innerR * Math.cos(radAngle);
-              const y2 = 50 + innerR * Math.sin(radAngle);
-              
-              return (
-                <g key={angle}>
-                  <line
-                    x1={x1}
-                    y1={y1}
-                    x2={x2}
-                    y2={y2}
-                    stroke={angle === 0 ? '#FF4500' : isCardinal ? '#FFFFFF' : 'rgba(255,255,255,0.4)'}
-                    strokeWidth={isCardinal ? 2.5 : isIntercardinal ? 1.5 : 1}
-                    strokeLinecap="round"
-                  />
-                  {label && (
-                    <text
-                      x={50 + 30 * Math.cos(radAngle)}
-                      y={50 + 30 * Math.sin(radAngle)}
-                      fill={angle === 0 ? '#FF4500' : '#FFFFFF'}
-                      fontSize="9"
-                      fontWeight="bold"
-                      fontFamily="Chivo, sans-serif"
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      style={{
-                        transform: `rotate(${normalizedHeading}deg)`,
-                        transformOrigin: `${50 + 30 * Math.cos(radAngle)}px ${50 + 30 * Math.sin(radAngle)}px`
-                      }}
-                    >
-                      {label}
-                    </text>
-                  )}
-                </g>
-              );
-            })}
-            
-            {/* Compass needle */}
-            <g style={{ transform: `rotate(${normalizedHeading}deg)`, transformOrigin: '50px 50px' }}>
-              {/* North pointer (red) */}
-              <polygon
-                points="50,18 46,50 50,46 54,50"
-                fill="#FF4500"
-                filter="drop-shadow(0 0 3px rgba(255,69,0,0.8))"
-              />
-              {/* South pointer (white) */}
-              <polygon
-                points="50,82 46,50 50,54 54,50"
-                fill="rgba(255,255,255,0.6)"
-              />
-              {/* Center pivot */}
-              <circle cx="50" cy="50" r="4" fill="#333" stroke="#FF4500" strokeWidth="1.5" />
-            </g>
-          </svg>
-
-          {/* Bubble level container (glass dome effect) */}
+          {/* Floating compass disc inside marble */}
           <div
             className="absolute rounded-full"
             style={{
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: '50px',
-              height: '50px',
-              background: 'radial-gradient(circle at 40% 40%, rgba(0,255,65,0.08) 0%, rgba(0,0,0,0.3) 100%)',
-              border: `2px solid ${isLevel ? 'rgba(0,255,65,0.5)' : 'rgba(255,255,255,0.15)'}`,
-              boxShadow: isLevel 
-                ? '0 0 15px rgba(0,255,65,0.3), inset 0 2px 10px rgba(0,0,0,0.5)'
-                : 'inset 0 2px 10px rgba(0,0,0,0.5)',
-              transition: 'border-color 0.3s ease, box-shadow 0.3s ease'
+              top: '15px',
+              left: '15px',
+              right: '15px',
+              bottom: '15px',
+              background: `
+                linear-gradient(145deg, 
+                  rgba(20,20,25,0.95) 0%,
+                  rgba(10,10,15,0.98) 100%
+                )
+              `,
+              boxShadow: `
+                0 4px 20px rgba(0,0,0,0.5),
+                inset 0 1px 0 rgba(255,255,255,0.1)
+              `,
+              border: '2px solid rgba(255,255,255,0.15)',
+              transform: innerTransform,
+              transition: 'transform 0.1s ease-out'
             }}
           >
-            {/* Level crosshairs */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div 
-                className="absolute w-full h-[1px]"
-                style={{ background: 'rgba(255,255,255,0.15)' }}
+            {/* Compass rose SVG */}
+            <svg
+              className="absolute inset-0 w-full h-full"
+              viewBox="0 0 100 100"
+            >
+              {/* Outer degree ring */}
+              <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+              <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" />
+              
+              {/* Degree tick marks */}
+              {Array.from({ length: 72 }).map((_, i) => {
+                const angle = i * 5;
+                const isCardinal = angle % 90 === 0;
+                const isIntercardinal = angle % 45 === 0 && !isCardinal;
+                const isMajor = angle % 30 === 0;
+                const radAngle = (angle - 90) * Math.PI / 180;
+                const outerR = 45;
+                const innerR = isCardinal ? 35 : isIntercardinal ? 38 : isMajor ? 40 : 42;
+                
+                return (
+                  <line
+                    key={i}
+                    x1={50 + outerR * Math.cos(radAngle)}
+                    y1={50 + outerR * Math.sin(radAngle)}
+                    x2={50 + innerR * Math.cos(radAngle)}
+                    y2={50 + innerR * Math.sin(radAngle)}
+                    stroke={angle === 0 ? '#FF4500' : isCardinal ? '#FFFFFF' : 'rgba(255,255,255,0.3)'}
+                    strokeWidth={isCardinal ? 2 : isIntercardinal ? 1.5 : 0.5}
+                    strokeLinecap="round"
+                  />
+                );
+              })}
+              
+              {/* Cardinal direction labels */}
+              {[
+                { label: 'N', angle: 0, color: '#FF4500' },
+                { label: 'E', angle: 90, color: '#FFFFFF' },
+                { label: 'S', angle: 180, color: '#FFFFFF' },
+                { label: 'W', angle: 270, color: '#FFFFFF' }
+              ].map(({ label, angle, color }) => {
+                const radAngle = (angle - 90) * Math.PI / 180;
+                const r = 28;
+                return (
+                  <text
+                    key={label}
+                    x={50 + r * Math.cos(radAngle)}
+                    y={50 + r * Math.sin(radAngle)}
+                    fill={color}
+                    fontSize="10"
+                    fontWeight="bold"
+                    fontFamily="Chivo, sans-serif"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                  >
+                    {label}
+                  </text>
+                );
+              })}
+              
+              {/* Compass needle - North (red) */}
+              <path
+                d="M50 12 L46 50 L50 45 L54 50 Z"
+                fill="url(#northGradient)"
+                filter="drop-shadow(0 0 3px rgba(255,69,0,0.8))"
               />
-              <div 
-                className="absolute h-full w-[1px]"
-                style={{ background: 'rgba(255,255,255,0.15)' }}
+              
+              {/* Compass needle - South (silver) */}
+              <path
+                d="M50 88 L46 50 L50 55 L54 50 Z"
+                fill="url(#southGradient)"
               />
-              {/* Center target circle */}
-              <div 
-                className="absolute w-3 h-3 rounded-full border"
-                style={{ borderColor: 'rgba(255,255,255,0.2)' }}
-              />
-            </div>
+              
+              {/* Center pivot jewel */}
+              <circle cx="50" cy="50" r="6" fill="url(#pivotGradient)" />
+              <circle cx="50" cy="50" r="3" fill="#FF4500" filter="drop-shadow(0 0 4px rgba(255,69,0,0.6))" />
+              
+              {/* Gradients */}
+              <defs>
+                <linearGradient id="northGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#FF6B35" />
+                  <stop offset="50%" stopColor="#FF4500" />
+                  <stop offset="100%" stopColor="#CC3700" />
+                </linearGradient>
+                <linearGradient id="southGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+                  <stop offset="0%" stopColor="#666666" />
+                  <stop offset="50%" stopColor="#AAAAAA" />
+                  <stop offset="100%" stopColor="#888888" />
+                </linearGradient>
+                <radialGradient id="pivotGradient">
+                  <stop offset="0%" stopColor="#444444" />
+                  <stop offset="70%" stopColor="#222222" />
+                  <stop offset="100%" stopColor="#111111" />
+                </radialGradient>
+              </defs>
+            </svg>
+          </div>
 
-            {/* The bubble */}
+          {/* Bubble level floating in liquid */}
+          <div
+            className="absolute rounded-full pointer-events-none"
+            style={{
+              width: '16px',
+              height: '16px',
+              top: '50%',
+              left: '50%',
+              transform: `translate(calc(-50% + ${bubbleX}px), calc(-50% + ${bubbleY}px))`,
+              background: isLevel
+                ? 'radial-gradient(circle at 30% 30%, rgba(0,255,100,0.9) 0%, rgba(0,200,80,0.7) 50%, rgba(0,150,60,0.5) 100%)'
+                : 'radial-gradient(circle at 30% 30%, rgba(255,200,0,0.9) 0%, rgba(255,150,0,0.7) 50%, rgba(200,100,0,0.5) 100%)',
+              boxShadow: isLevel
+                ? '0 0 15px rgba(0,255,100,0.5), inset 0 -3px 6px rgba(0,0,0,0.2), inset 0 3px 6px rgba(255,255,255,0.4)'
+                : '0 0 12px rgba(255,180,0,0.4), inset 0 -3px 6px rgba(0,0,0,0.2), inset 0 3px 6px rgba(255,255,255,0.4)',
+              transition: 'transform 0.15s ease-out, background 0.3s ease',
+              zIndex: 10
+            }}
+          >
+            {/* Bubble highlight */}
             <div
               className="absolute rounded-full"
               style={{
-                width: '14px',
-                height: '14px',
-                top: '50%',
-                left: '50%',
-                transform: `translate(calc(-50% + ${bubbleX}px), calc(-50% + ${bubbleY}px))`,
-                background: isLevel
-                  ? 'radial-gradient(circle at 30% 30%, #00FF41 0%, #00CC33 50%, #009922 100%)'
-                  : 'radial-gradient(circle at 30% 30%, #FFD700 0%, #FFA500 50%, #FF8C00 100%)',
-                boxShadow: isLevel
-                  ? '0 0 10px rgba(0,255,65,0.8), inset 0 -2px 4px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.4)'
-                  : '0 0 8px rgba(255,165,0,0.6), inset 0 -2px 4px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.4)',
-                transition: 'transform 0.15s ease-out, background 0.3s ease, box-shadow 0.3s ease'
+                width: '6px',
+                height: '4px',
+                top: '3px',
+                left: '4px',
+                background: 'rgba(255,255,255,0.7)',
+                borderRadius: '50%',
+                filter: 'blur(1px)'
               }}
-            >
-              {/* Bubble highlight */}
-              <div
-                className="absolute rounded-full"
-                style={{
-                  width: '6px',
-                  height: '6px',
-                  top: '2px',
-                  left: '3px',
-                  background: 'rgba(255,255,255,0.6)',
-                  filter: 'blur(1px)'
-                }}
-              />
-            </div>
+            />
           </div>
         </div>
 
-        {/* Glass reflection overlay */}
+        {/* Glass reflection highlights */}
         <div
           className="absolute rounded-full pointer-events-none"
           style={{
             top: '5%',
-            left: '10%',
-            width: '40%',
-            height: '25%',
-            background: 'linear-gradient(180deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 100%)',
-            borderRadius: '50%',
-            transform: 'rotate(-20deg)'
+            left: '8%',
+            width: '45%',
+            height: '30%',
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 100%)',
+            borderRadius: '50% 50% 50% 50%',
+            transform: 'rotate(-15deg)',
+            filter: 'blur(2px)'
+          }}
+        />
+        <div
+          className="absolute rounded-full pointer-events-none"
+          style={{
+            bottom: '10%',
+            right: '10%',
+            width: '20%',
+            height: '15%',
+            background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%)',
+            filter: 'blur(3px)'
           }}
         />
       </div>
 
-      {/* Fixed heading indicator (top) */}
+      {/* Fixed north indicator (top of container) */}
       <div 
-        className="absolute left-1/2 -translate-x-1/2"
-        style={{ top: '-8px' }}
+        className="absolute left-1/2 -translate-x-1/2 z-20"
+        style={{ top: '-12px' }}
       >
-        <svg width="16" height="12" viewBox="0 0 16 12">
-          <polygon
-            points="8,12 0,0 16,0"
-            fill="#FF4500"
-            filter="drop-shadow(0 0 4px rgba(255,69,0,0.8))"
-          />
-        </svg>
+        <div className="relative">
+          <svg width="20" height="14" viewBox="0 0 20 14">
+            <polygon
+              points="10,14 0,0 20,0"
+              fill="#FF4500"
+              filter="drop-shadow(0 0 6px rgba(255,69,0,0.8))"
+            />
+          </svg>
+        </div>
       </div>
 
-      {/* Heading readout (below compass) */}
+      {/* Heading readout */}
       <div 
         className="absolute left-1/2 -translate-x-1/2 text-center"
-        style={{ bottom: '-32px' }}
+        style={{ bottom: '-45px' }}
       >
-        <div className="font-mono text-xl font-bold tracking-wider hud-text"
-          style={{ color: '#00FF41', textShadow: '0 0 10px rgba(0,255,65,0.5)' }}
+        <div 
+          className="font-mono text-2xl font-bold tracking-wider"
+          style={{ 
+            color: '#00FF41', 
+            textShadow: '0 0 15px rgba(0,255,65,0.6), 0 2px 4px rgba(0,0,0,0.8)' 
+          }}
         >
           {Math.round(normalizedHeading)}°
         </div>
-        <div className="text-[10px] font-bold text-white/60 tracking-widest">
+        <div className="text-sm font-bold text-white/80 tracking-widest mt-1">
           {getDirectionLabel(normalizedHeading)}
         </div>
       </div>
 
-      {/* Tilt indicators (small text) */}
+      {/* Device edge pointer indicator */}
       <div 
-        className="absolute text-center font-mono text-[9px]"
-        style={{ 
-          bottom: '-52px', 
-          left: '50%', 
-          transform: 'translateX(-50%)',
-          color: isLevel ? '#00FF41' : '#FFD700',
-          opacity: 0.7
-        }}
+        className="absolute left-1/2 -translate-x-1/2 text-center"
+        style={{ bottom: '-85px' }}
       >
-        {isLevel ? '● LEVEL' : `TILT: ${Math.abs(clampedBeta).toFixed(0)}° / ${Math.abs(clampedGamma).toFixed(0)}°`}
+        <div 
+          className="glass-panel rounded-lg px-3 py-1.5 inline-block"
+          style={{ 
+            background: 'rgba(0,0,0,0.7)',
+            border: '1px solid rgba(255,69,0,0.3)'
+          }}
+        >
+          <div className="text-[10px] text-white/50 uppercase tracking-wider mb-0.5">
+            Device Edge
+          </div>
+          <div 
+            className="text-xs font-bold tracking-wider"
+            style={{ color: '#FF4500' }}
+          >
+            → {devicePointer.edge}
+            <span className="text-[#00FF41]">{devicePointer.tilt}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Level status */}
+      <div 
+        className="absolute left-1/2 -translate-x-1/2"
+        style={{ bottom: '-115px' }}
+      >
+        <div 
+          className="text-[10px] font-mono font-bold tracking-wider"
+          style={{ 
+            color: isLevel ? '#00FF41' : '#FFD700',
+            textShadow: isLevel ? '0 0 8px rgba(0,255,65,0.5)' : '0 0 8px rgba(255,215,0,0.5)'
+          }}
+        >
+          {isLevel ? '● LEVEL' : `◐ TILT ${Math.abs(clampedBeta).toFixed(0)}° / ${Math.abs(clampedGamma).toFixed(0)}°`}
+        </div>
       </div>
     </div>
   );
