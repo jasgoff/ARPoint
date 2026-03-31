@@ -13,6 +13,7 @@ import ARView from "@/pages/ARView";
 import MapView from "@/pages/MapView";
 import SavedView from "@/pages/SavedView";
 import SettingsView from "@/pages/SettingsView";
+import CompassDemo from "@/pages/CompassDemo";
 
 // Components
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -30,6 +31,7 @@ const AppRouter = () => {
   return (
     <Routes>
       <Route path="/" element={<Login />} />
+      <Route path="/compass-demo" element={<CompassDemo />} />
       <Route
         path="/dashboard/*"
         element={

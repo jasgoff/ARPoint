@@ -83,9 +83,10 @@
 /* Compass HUD */
 .compass-hud {
   position: absolute;
-  top: 16px;
+  top: 24px;
   left: 50%;
   transform: translateX(-50%);
+  z-index: 15;
 }
 
 /* Coordinates HUD */
