@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 
 const Compass3D = ({ heading = 0, orientation = { alpha: 0, beta: 0, gamma: 0 } }) => {
   // Normalize heading to 0-360
@@ -13,8 +13,8 @@ const Compass3D = ({ heading = 0, orientation = { alpha: 0, beta: 0, gamma: 0 } 
   const clampedGamma = Math.max(-60, Math.min(60, gamma));
   
   // Calculate bubble position (inverted - bubble goes opposite to tilt)
-  const bubbleX = (clampedGamma / 60) * 30;
-  const bubbleY = (clampedBeta / 60) * 30;
+  const bubbleX = (clampedGamma / 60) * 28;
+  const bubbleY = (clampedBeta / 60) * 28;
   
   // Check if level (within 3 degrees)
   const isLevel = Math.abs(beta) < 3 && Math.abs(gamma) < 3;
@@ -27,44 +27,15 @@ const Compass3D = ({ heading = 0, orientation = { alpha: 0, beta: 0, gamma: 0 } 
     return directions[index];
   };
 
-  // Determine which device edge/corner the compass is pointing to
-  const getDeviceEdgePointer = (heading, beta, gamma) => {
-    // Combine heading with tilt to determine 3D direction
-    const effectiveHeading = heading;
-    
-    // Determine primary direction based on heading
-    let hDir = '';
-    if (effectiveHeading >= 337.5 || effectiveHeading < 22.5) hDir = 'TOP';
-    else if (effectiveHeading >= 22.5 && effectiveHeading < 67.5) hDir = 'TOP-RIGHT';
-    else if (effectiveHeading >= 67.5 && effectiveHeading < 112.5) hDir = 'RIGHT';
-    else if (effectiveHeading >= 112.5 && effectiveHeading < 157.5) hDir = 'BOTTOM-RIGHT';
-    else if (effectiveHeading >= 157.5 && effectiveHeading < 202.5) hDir = 'BOTTOM';
-    else if (effectiveHeading >= 202.5 && effectiveHeading < 247.5) hDir = 'BOTTOM-LEFT';
-    else if (effectiveHeading >= 247.5 && effectiveHeading < 292.5) hDir = 'LEFT';
-    else if (effectiveHeading >= 292.5 && effectiveHeading < 337.5) hDir = 'TOP-LEFT';
-    
-    // Add vertical component based on tilt
-    let vDir = '';
-    if (beta > 20) vDir = ' ↗ FRONT';
-    else if (beta < -20) vDir = ' ↙ BACK';
-    
-    return { edge: hDir, tilt: vDir };
-  };
-
-  const devicePointer = getDeviceEdgePointer(normalizedHeading, clampedBeta, clampedGamma);
-
-  // 3D marble transform - full multi-axis movement
+  // 3D marble transform - tilts with device but does NOT rotate with heading
   const marbleTransform = `
     perspective(600px)
-    rotateX(${clampedBeta * 0.6}deg)
-    rotateY(${-clampedGamma * 0.6}deg)
-    rotateZ(${-normalizedHeading}deg)
+    rotateX(${clampedBeta * 0.5}deg)
+    rotateY(${-clampedGamma * 0.5}deg)
   `;
 
-  // Inner compass disc transform (counter-rotates to stay readable)
-  const innerTransform = `
-    rotateZ(${normalizedHeading}deg)
-  `;
+  // Compass rose rotates opposite to heading so needle appears to point north
+  const roseRotation = -normalizedHeading;
 
   return (
     <div
@@ -123,12 +94,12 @@ const Compass3D = ({ heading = 0, orientation = { alpha: 0, beta: 0, gamma: 0 } 
         >
           {/* Floating compass disc inside marble */}
           <div
-            className="absolute rounded-full"
+            className="absolute rounded-full overflow-hidden"
             style={{
-              top: '15px',
-              left: '15px',
-              right: '15px',
-              bottom: '15px',
+              top: '12px',
+              left: '12px',
+              right: '12px',
+              bottom: '12px',
               background: `
                 linear-gradient(145deg, 
                   rgba(20,20,25,0.95) 0%,
@@ -139,15 +110,17 @@ const Compass3D = ({ heading = 0, orientation = { alpha: 0, beta: 0, gamma: 0 } 
                 0 4px 20px rgba(0,0,0,0.5),
                 inset 0 1px 0 rgba(255,255,255,0.1)
               `,
-              border: '2px solid rgba(255,255,255,0.15)',
-              transform: innerTransform,
-              transition: 'transform 0.1s ease-out'
+              border: '2px solid rgba(255,255,255,0.15)'
             }}
           >
-            {/* Compass rose SVG */}
+            {/* Compass rose SVG - rotates with heading */}
             <svg
               className="absolute inset-0 w-full h-full"
               viewBox="0 0 100 100"
+              style={{
+                transform: `rotate(${roseRotation}deg)`,
+                transition: 'transform 0.1s ease-out'
+              }}
             >
               {/* Outer degree ring */}
               <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
@@ -177,7 +150,7 @@ const Compass3D = ({ heading = 0, orientation = { alpha: 0, beta: 0, gamma: 0 } 
                 );
               })}
               
-              {/* Cardinal direction labels */}
+              {/* Cardinal direction labels - rotate with rose */}
               {[
                 { label: 'N', angle: 0, color: '#FF4500' },
                 { label: 'E', angle: 90, color: '#FFFFFF' },
@@ -192,27 +165,30 @@ const Compass3D = ({ heading = 0, orientation = { alpha: 0, beta: 0, gamma: 0 } 
                     x={50 + r * Math.cos(radAngle)}
                     y={50 + r * Math.sin(radAngle)}
                     fill={color}
-                    fontSize="10"
+                    fontSize="11"
                     fontWeight="bold"
                     fontFamily="Chivo, sans-serif"
                     textAnchor="middle"
                     dominantBaseline="middle"
+                    style={{
+                      textShadow: label === 'N' ? '0 0 8px rgba(255,69,0,0.8)' : 'none'
+                    }}
                   >
                     {label}
                   </text>
                 );
               })}
               
-              {/* Compass needle - North (red) */}
+              {/* Compass needle - North (red) - points to N on the rose */}
               <path
-                d="M50 12 L46 50 L50 45 L54 50 Z"
+                d="M50 14 L46 48 L50 44 L54 48 Z"
                 fill="url(#northGradient)"
-                filter="drop-shadow(0 0 3px rgba(255,69,0,0.8))"
+                filter="drop-shadow(0 0 4px rgba(255,69,0,0.9))"
               />
               
               {/* Compass needle - South (silver) */}
               <path
-                d="M50 88 L46 50 L50 55 L54 50 Z"
+                d="M50 86 L46 52 L50 56 L54 52 Z"
                 fill="url(#southGradient)"
               />
               
@@ -245,8 +221,8 @@ const Compass3D = ({ heading = 0, orientation = { alpha: 0, beta: 0, gamma: 0 } 
           <div
             className="absolute rounded-full pointer-events-none"
             style={{
-              width: '16px',
-              height: '16px',
+              width: '14px',
+              height: '14px',
               top: '50%',
               left: '50%',
               transform: `translate(calc(-50% + ${bubbleX}px), calc(-50% + ${bubbleY}px))`,
@@ -254,8 +230,8 @@ const Compass3D = ({ heading = 0, orientation = { alpha: 0, beta: 0, gamma: 0 } 
                 ? 'radial-gradient(circle at 30% 30%, rgba(0,255,100,0.9) 0%, rgba(0,200,80,0.7) 50%, rgba(0,150,60,0.5) 100%)'
                 : 'radial-gradient(circle at 30% 30%, rgba(255,200,0,0.9) 0%, rgba(255,150,0,0.7) 50%, rgba(200,100,0,0.5) 100%)',
               boxShadow: isLevel
-                ? '0 0 15px rgba(0,255,100,0.5), inset 0 -3px 6px rgba(0,0,0,0.2), inset 0 3px 6px rgba(255,255,255,0.4)'
-                : '0 0 12px rgba(255,180,0,0.4), inset 0 -3px 6px rgba(0,0,0,0.2), inset 0 3px 6px rgba(255,255,255,0.4)',
+                ? '0 0 12px rgba(0,255,100,0.5), inset 0 -2px 4px rgba(0,0,0,0.2), inset 0 2px 4px rgba(255,255,255,0.4)'
+                : '0 0 10px rgba(255,180,0,0.4), inset 0 -2px 4px rgba(0,0,0,0.2), inset 0 2px 4px rgba(255,255,255,0.4)',
               transition: 'transform 0.15s ease-out, background 0.3s ease',
               zIndex: 10
             }}
@@ -264,10 +240,10 @@ const Compass3D = ({ heading = 0, orientation = { alpha: 0, beta: 0, gamma: 0 } 
             <div
               className="absolute rounded-full"
               style={{
-                width: '6px',
-                height: '4px',
-                top: '3px',
-                left: '4px',
+                width: '5px',
+                height: '3px',
+                top: '2px',
+                left: '3px',
                 background: 'rgba(255,255,255,0.7)',
                 borderRadius: '50%',
                 filter: 'blur(1px)'
@@ -303,26 +279,24 @@ const Compass3D = ({ heading = 0, orientation = { alpha: 0, beta: 0, gamma: 0 } 
         />
       </div>
 
-      {/* Fixed north indicator (top of container) */}
+      {/* Fixed north indicator arrow (top of container) - N always aligns here */}
       <div 
         className="absolute left-1/2 -translate-x-1/2 z-20"
-        style={{ top: '-12px' }}
+        style={{ top: '-14px' }}
       >
-        <div className="relative">
-          <svg width="20" height="14" viewBox="0 0 20 14">
-            <polygon
-              points="10,14 0,0 20,0"
-              fill="#FF4500"
-              filter="drop-shadow(0 0 6px rgba(255,69,0,0.8))"
-            />
-          </svg>
-        </div>
+        <svg width="24" height="16" viewBox="0 0 24 16">
+          <polygon
+            points="12,16 2,0 22,0"
+            fill="#FF4500"
+            filter="drop-shadow(0 0 8px rgba(255,69,0,0.9))"
+          />
+        </svg>
       </div>
 
       {/* Heading readout */}
       <div 
         className="absolute left-1/2 -translate-x-1/2 text-center"
-        style={{ bottom: '-45px' }}
+        style={{ bottom: '-40px' }}
       >
         <div 
           className="font-mono text-2xl font-bold tracking-wider"
@@ -338,35 +312,10 @@ const Compass3D = ({ heading = 0, orientation = { alpha: 0, beta: 0, gamma: 0 } 
         </div>
       </div>
 
-      {/* Device edge pointer indicator */}
-      <div 
-        className="absolute left-1/2 -translate-x-1/2 text-center"
-        style={{ bottom: '-85px' }}
-      >
-        <div 
-          className="glass-panel rounded-lg px-3 py-1.5 inline-block"
-          style={{ 
-            background: 'rgba(0,0,0,0.7)',
-            border: '1px solid rgba(255,69,0,0.3)'
-          }}
-        >
-          <div className="text-[10px] text-white/50 uppercase tracking-wider mb-0.5">
-            Device Edge
-          </div>
-          <div 
-            className="text-xs font-bold tracking-wider"
-            style={{ color: '#FF4500' }}
-          >
-            → {devicePointer.edge}
-            <span className="text-[#00FF41]">{devicePointer.tilt}</span>
-          </div>
-        </div>
-      </div>
-
       {/* Level status */}
       <div 
         className="absolute left-1/2 -translate-x-1/2"
-        style={{ bottom: '-115px' }}
+        style={{ bottom: '-75px' }}
       >
         <div 
           className="text-[10px] font-mono font-bold tracking-wider"
