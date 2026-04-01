@@ -1,0 +1,67 @@
+{
+  "expo": {
+    "name": "AR Survey",
+    "slug": "ar-survey-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0A0A"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.arsurvey.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "AR Survey needs camera access for AR features and pin dropping",
+        "NSLocationWhenInUseUsageDescription": "AR Survey needs location access for GPS coordinates and navigation",
+        "NSLocationAlwaysUsageDescription": "AR Survey needs location access for background tracing",
+        "NSMotionUsageDescription": "AR Survey needs motion access for compass and device orientation"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0A0A0A"
+      },
+      "package": "com.arsurvey.mobile",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.HIGH_SAMPLING_RATE_SENSORS"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "AR Survey needs camera access for AR features"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "AR Survey needs location for GPS tracking"
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "AR Survey needs motion sensors for compass"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id"
+      }
+    }
+  }
+}
