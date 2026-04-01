@@ -110,6 +110,15 @@ AR surveying/mapping PWA application with:
 - **Settings toggles** for compass and AR pins visibility
 - Configurable AR pin range (330ft - 6,560ft)
 
+### Phase 3: Export & Location (2026-04-01)
+- **KML Export** - Download pins, traces, measurements as KML file
+- Compatible with Google Earth, Google Maps, and GIS software
+- Select which data types to export
+- **Manual Location Input** - Search by address, city, or zipcode
+- Geocoding via OpenStreetMap Nominatim API
+- "Use GPS Location" quick button
+- Location search in header for easy access
+
 ## Prioritized Backlog
 
 ### P0 (Critical)
@@ -117,7 +126,7 @@ AR surveying/mapping PWA application with:
 
 ### P1 (High Priority)
 - [ ] Offline mode with service worker
-- [ ] Export data (GPX, KML, CSV)
+- [ ] Google Drive sync for KML files
 - [ ] Share pins/traces via link
 - [ ] Photo attachment to pins
 
