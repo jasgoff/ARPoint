@@ -321,8 +321,8 @@ const MapView = () => {
         </Button>
       </div>
 
-      {/* Add pin button */}
-      <div className="absolute bottom-28 right-4 z-[1000]">
+      {/* Add pin button - positioned above bottom nav */}
+      <div className="absolute bottom-4 right-4 z-[1000]">
         <Button
           data-testid="add-pin-map-btn"
           onClick={() => setIsAddingPin(!isAddingPin)}

@@ -119,14 +119,25 @@ AR surveying/mapping PWA application with:
 - "Use GPS Location" quick button
 - Location search in header for easy access
 
+### Phase 4: Optional Auth & Splash Screen (2026-04-02) ✅ COMPLETE
+- ✅ **Splash Screen** - 5-second branded loading screen on app launch with animated compass and loading indicator
+- ✅ **Optional Google Sign-in** - Authentication is no longer required to use the app
+- ✅ **Optional Auth Prompt** - Dismissible non-intrusive banner to encourage sign-in for sync features
+- ✅ **Multiple Sign-in Entry Points** - Available in Settings page, header button (desktop), and mobile menu
+- ✅ **Guest Mode** - Full app functionality available without authentication
+- ✅ **localStorage Fallback** - Data persists locally for unauthenticated users
+- ✅ **Conditional UI** - App header and settings adapt based on authentication status
+- ✅ **Uniform Bottom Navigation** - Verified working across all views (AR, Map, Saved, Settings)
+
 ## Prioritized Backlog
 
 ### P0 (Critical)
 - None currently
 
 ### P1 (High Priority)
+- [ ] **MongoDB Migration for Multidevice Sync** - Move pins/traces/measurements from localStorage to MongoDB backend with FastAPI CRUD endpoints to enable cross-device data persistence (explicitly requested by user)
+- [ ] **Google Drive KML Workspace Sync** - Implement Google Drive API OAuth integration to auto-sync KML files to user's Drive folder and enable workspace save/load functionality (explicitly requested by user)
 - [ ] Offline mode with service worker
-- [ ] Google Drive sync for KML files
 - [ ] Share pins/traces via link
 - [ ] Photo attachment to pins
 
@@ -167,7 +178,12 @@ AR surveying/mapping PWA application with:
 
 ## Next Tasks
 
-1. Add service worker for offline support
-2. Implement data export (GPX format)
-3. Add photo capture and attachment to pins
-4. Consider React Native version for deeper hardware access
+### Immediate (P1)
+1. **MongoDB Backend Migration** - Implement full CRUD endpoints and schemas for pins, traces, and measurements to replace localStorage and enable multidevice sync
+2. **Google Drive API Integration** - Add OAuth flow and Drive API endpoints for KML workspace synchronization
+
+### Short-term (P1-P2)
+3. Add service worker for offline support
+4. Implement data export (GPX format)
+5. Add photo capture and attachment to pins
+6. Consider React Native version for deeper hardware access

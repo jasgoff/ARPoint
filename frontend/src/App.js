@@ -6,6 +6,7 @@ import { AppProvider } from "@/context/AppContext";
 import { Toaster } from "@/components/ui/toaster";
 
 // Pages
+import SplashScreen from "@/pages/SplashScreen";
 import Login from "@/pages/Login";
 import AuthCallback from "@/pages/AuthCallback";
 import Dashboard from "@/pages/Dashboard";
@@ -30,16 +31,10 @@ const AppRouter = () => {
 
   return (
     <Routes>
-      <Route path="/" element={<Login />} />
+      <Route path="/" element={<SplashScreen />} />
+      <Route path="/login" element={<Login />} />
       <Route path="/compass-demo" element={<CompassDemo />} />
-      <Route
-        path="/dashboard/*"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      >
+      <Route path="/dashboard/*" element={<Dashboard />}>
         <Route index element={<ARView />} />
         <Route path="ar" element={<ARView />} />
         <Route path="map" element={<MapView />} />

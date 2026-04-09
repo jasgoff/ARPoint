@@ -10,6 +10,7 @@ import {
   Map,
   User,
   LogOut,
+  LogIn,
   Info,
   Smartphone,
   Eye,
@@ -19,7 +20,7 @@ import { Button } from '@/components/ui/button';
 
 const SettingsView = () => {
   const { settings, updateSettings } = useApp();
-  const { user, logout } = useAuth();
+  const { user, logout, login, isAuthenticated } = useAuth();
 
   // Convert meters to feet for display
   const rangeInFeet = Math.round((settings.arPinRange || 610) * 3.28084);
@@ -232,8 +233,35 @@ const SettingsView = () => {
         </div>
       </div>
 
-      {/* About */}
+      {/* Account Section */}
       <div className="mb-6">
+        <h4 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-3 px-1">
+          Account
+        </h4>
+        
+        {isAuthenticated ? (
+          <Button
+            data-testid="settings-logout-btn"
+            onClick={logout}
+            className="w-full h-14 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl font-bold flex items-center justify-center gap-2"
+          >
+            <LogOut className="w-5 h-5" />
+            Sign Out
+          </Button>
+        ) : (
+          <Button
+            data-testid="settings-login-btn"
+            onClick={login}
+            className="w-full h-14 bg-white text-[#0A0A0A] hover:bg-white/90 rounded-xl font-bold flex items-center justify-center gap-2"
+          >
+            <LogIn className="w-5 h-5" />
+            Sign in with Google
+          </Button>
+        )}
+      </div>
+
+      {/* About */}
+      <div className="mb-20">
         <h4 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-3 px-1">
           About
         </h4>
@@ -251,22 +279,12 @@ const SettingsView = () => {
             <Info className="w-5 h-5 text-white/60" />
             <div>
               <Label className="text-white font-medium">Data Storage</Label>
-              <p className="text-xs text-white/40 mt-0.5">All data is stored locally on your device</p>
+              <p className="text-xs text-white/40 mt-0.5">
+                {isAuthenticated ? 'Synced with Google account' : 'Stored locally on your device'}
+              </p>
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Logout */}
-      <div className="mb-20">
-        <Button
-          data-testid="settings-logout-btn"
-          onClick={logout}
-          className="w-full h-14 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl font-bold flex items-center justify-center gap-2"
-        >
-          <LogOut className="w-5 h-5" />
-          Sign Out
-        </Button>
       </div>
     </div>
   );

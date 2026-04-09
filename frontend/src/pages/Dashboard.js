@@ -6,6 +6,7 @@ import { Compass, Map, List, Settings, LogOut, User, Download, Menu, X } from 'l
 import { Loader2 } from 'lucide-react';
 import LocationSearch from '@/components/LocationSearch';
 import ExportMenu from '@/components/ExportMenu';
+import OptionalAuthPrompt from '@/components/OptionalAuthPrompt';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -17,15 +18,9 @@ const Dashboard = () => {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
-  // Auth check
-  useEffect(() => {
-    if (location.state?.user) {
-      return;
-    }
-    if (!loading && !isAuthenticated) {
-      navigate('/', { replace: true });
-    }
-  }, [loading, isAuthenticated, navigate, location.state]);
+  // Optional auth check - no longer required
+  // Users can use the app without authentication
+  // They'll see a prompt to sign in for sync features
 
   // GPS and device orientation setup
   useEffect(() => {
@@ -119,6 +114,9 @@ const Dashboard = () => {
 
   return (
     <div className="app-container" data-testid="dashboard-container">
+      {/* Optional Auth Prompt - shows if not authenticated */}
+      <OptionalAuthPrompt />
+      
       {/* Header */}
       <header className="glass-panel px-4 py-3 flex items-center justify-between z-20 relative">
         <div className="flex items-center gap-3">
@@ -166,65 +164,92 @@ const Dashboard = () => {
 
           {/* User menu (desktop) */}
           <div className="hidden sm:flex items-center gap-2">
-            {displayUser?.picture ? (
-              <img
-                src={displayUser.picture}
-                alt={displayUser.name}
-                className="w-8 h-8 rounded-full border border-white/20"
-              />
+            {isAuthenticated ? (
+              <>
+                {displayUser?.picture ? (
+                  <img
+                    src={displayUser.picture}
+                    alt={displayUser.name}
+                    className="w-8 h-8 rounded-full border border-white/20"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-[#FF4500] flex items-center justify-center">
+                    <User className="w-4 h-4 text-white" />
+                  </div>
+                )}
+                <button
+                  data-testid="logout-btn"
+                  onClick={logout}
+                  className="p-2 text-white/60 hover:text-white transition-colors"
+                  title="Logout"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </>
             ) : (
-              <div className="w-8 h-8 rounded-full bg-[#FF4500] flex items-center justify-center">
-                <User className="w-4 h-4 text-white" />
-              </div>
+              <button
+                data-testid="header-login-btn"
+                onClick={() => navigate('/login')}
+                className="px-3 py-1.5 text-sm font-semibold text-white/80 hover:text-white border border-white/20 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                Sign in
+              </button>
             )}
-            <button
-              data-testid="logout-btn"
-              onClick={logout}
-              className="p-2 text-white/60 hover:text-white transition-colors"
-              title="Logout"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
           </div>
         </div>
 
         {/* Mobile dropdown menu */}
         {showMobileMenu && (
           <div className="absolute top-full right-0 mt-2 w-48 glass-panel rounded-xl p-2 z-50">
-            <div className="flex items-center gap-3 p-3 border-b border-white/10">
-              {displayUser?.picture ? (
-                <img
-                  src={displayUser.picture}
-                  alt={displayUser.name}
-                  className="w-10 h-10 rounded-full border border-white/20"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-[#FF4500] flex items-center justify-center">
-                  <User className="w-5 h-5 text-white" />
+            {isAuthenticated ? (
+              <>
+                <div className="flex items-center gap-3 p-3 border-b border-white/10">
+                  {displayUser?.picture ? (
+                    <img
+                      src={displayUser.picture}
+                      alt={displayUser.name}
+                      className="w-10 h-10 rounded-full border border-white/20"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-[#FF4500] flex items-center justify-center">
+                      <User className="w-5 h-5 text-white" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-white font-medium truncate">{displayUser?.name}</div>
+                    <div className="text-white/50 text-xs truncate">{displayUser?.email}</div>
+                  </div>
                 </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="text-white font-medium truncate">{displayUser?.name}</div>
-                <div className="text-white/50 text-xs truncate">{displayUser?.email}</div>
-              </div>
-            </div>
-            <button
-              onClick={() => {
-                setShowExportMenu(true);
-                setShowMobileMenu(false);
-              }}
-              className="w-full p-3 flex items-center gap-3 text-white/70 hover:text-white hover:bg-white/10 rounded-lg"
-            >
-              <Download className="w-5 h-5" />
-              Export KML
-            </button>
-            <button
-              onClick={logout}
-              className="w-full p-3 flex items-center gap-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg"
-            >
-              <LogOut className="w-5 h-5" />
-              Sign Out
-            </button>
+                <button
+                  onClick={() => {
+                    setShowExportMenu(true);
+                    setShowMobileMenu(false);
+                  }}
+                  className="w-full p-3 flex items-center gap-3 text-white/70 hover:text-white hover:bg-white/10 rounded-lg"
+                >
+                  <Download className="w-5 h-5" />
+                  Export KML
+                </button>
+                <button
+                  onClick={logout}
+                  className="w-full p-3 flex items-center gap-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg"
+                >
+                  <LogOut className="w-5 h-5" />
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => {
+                  navigate('/login');
+                  setShowMobileMenu(false);
+                }}
+                className="w-full p-3 flex items-center gap-3 text-white/70 hover:text-white hover:bg-white/10 rounded-lg"
+              >
+                <User className="w-5 h-5" />
+                Sign in with Google
+              </button>
+            )}
           </div>
         )}
       </header>
@@ -234,15 +259,15 @@ const Dashboard = () => {
         <Outlet />
       </main>
 
-      {/* Bottom navigation */}
-      <nav className="bottom-nav">
+      {/* Bottom navigation - UNIFORM */}
+      <nav className="bottom-nav" data-testid="bottom-navigation">
         <button
           data-testid="nav-ar"
           className={`nav-item ${activeTab === 'ar' ? 'active' : ''}`}
           onClick={() => handleTabChange('ar')}
         >
           <Compass className="w-6 h-6" />
-          <span>AR View</span>
+          <span>AR</span>
         </button>
         <button
           data-testid="nav-map"
