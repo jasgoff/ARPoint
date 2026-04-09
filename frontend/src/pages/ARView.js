@@ -400,7 +400,11 @@ const ARView = () => {
         {/* Compass (top center) - conditionally rendered */}
         {settings.showCompass && (
           <div className="compass-hud">
-            <Compass3D heading={heading} orientation={orientation} />
+            <Compass3D 
+              heading={heading} 
+              orientation={orientation}
+              calibrationOffset={settings.compassCalibration || -90}
+            />
           </div>
         )}
 

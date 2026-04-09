@@ -17,7 +17,9 @@ const DEFAULT_SETTINGS = {
   showCompass: true, // New: toggle compass visibility
   showARPins: true, // New: toggle AR pin markers
   arPinRange: 610, // Range in meters (2000ft = ~610m)
-  mapType: 'satellite' // 'satellite' or 'street'
+  mapType: 'satellite', // 'satellite' or 'street'
+  compassCalibration: -90, // Compass offset in degrees (default -90 for landscape back-camera-forward)
+  screenOrientation: 'landscape' // 'portrait' or 'landscape'
 };
 
 export const AppProvider = ({ children }) => {

@@ -58,7 +58,7 @@ const CompassDemo = () => {
 
       {/* Compass */}
       <div className="mb-32">
-        <Compass3D heading={heading} orientation={orientation} />
+        <Compass3D heading={heading} orientation={orientation} calibrationOffset={-90} />
       </div>
 
       {/* Controls */}
