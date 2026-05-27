@@ -7,12 +7,13 @@ import { Loader2 } from 'lucide-react';
 import LocationSearch from '@/components/LocationSearch';
 import ExportMenu from '@/components/ExportMenu';
 import OptionalAuthPrompt from '@/components/OptionalAuthPrompt';
+import EmergentBranding from '@/components/EmergentBranding';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAuthenticated, loading, logout } = useAuth();
-  const { setPosition, setHeading, setAltitude, setAccuracy, setOrientation } = useApp();
+  const { setPosition, setHeading, setAltitude, setAccuracy, setOrientation, settings } = useApp();
   const [activeTab, setActiveTab] = useState('ar');
   const [gpsStatus, setGpsStatus] = useState('searching');
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -299,6 +300,12 @@ const Dashboard = () => {
       <ExportMenu 
         isOpen={showExportMenu} 
         onClose={() => setShowExportMenu(false)} 
+      />
+
+      {/* Emergent Branding */}
+      <EmergentBranding 
+        show={settings.showEmergentBranding}
+        position={settings.emergentBrandingPosition}
       />
     </div>
   );

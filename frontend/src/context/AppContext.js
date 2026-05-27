@@ -19,7 +19,9 @@ const DEFAULT_SETTINGS = {
   arPinRange: 610, // Range in meters (2000ft = ~610m)
   mapType: 'satellite', // 'satellite' or 'street'
   compassCalibration: -90, // Compass offset in degrees (default -90 for landscape back-camera-forward)
-  screenOrientation: 'landscape' // 'portrait' or 'landscape'
+  screenOrientation: 'landscape', // 'portrait' or 'landscape'
+  showEmergentBranding: true, // Show "Made with Emergent" badge
+  emergentBrandingPosition: 'bottom-right' // 'bottom-right', 'bottom-left', 'bottom-center', 'top-right', 'top-left'
 };
 
 export const AppProvider = ({ children }) => {
