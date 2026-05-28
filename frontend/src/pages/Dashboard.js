@@ -8,6 +8,7 @@ import LocationSearch from '@/components/LocationSearch';
 import ExportMenu from '@/components/ExportMenu';
 import OptionalAuthPrompt from '@/components/OptionalAuthPrompt';
 import EmergentBranding from '@/components/EmergentBranding';
+import ImportKMLMenu from '@/components/ImportKMLMenu';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -17,6 +18,8 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('ar');
   const [gpsStatus, setGpsStatus] = useState('searching');
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showImportMenu, setShowImportMenu] = useState(false);
+  const [showLocationSearch, setShowLocationSearch] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   // Optional auth check - no longer required
@@ -155,6 +158,18 @@ const Dashboard = () => {
             <Download className="w-5 h-5" />
           </button>
 
+          {/* Import button */}
+          <button
+            data-testid="import-menu-btn"
+            onClick={() => setShowImportMenu(true)}
+            className="p-2 text-white/60 hover:text-[#007AFF] transition-colors"
+            title="Import KML"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+          </button>
+
           {/* Mobile menu toggle */}
           <button
             className="p-2 text-white/60 hover:text-white sm:hidden"
@@ -232,6 +247,18 @@ const Dashboard = () => {
                   Export KML
                 </button>
                 <button
+                  onClick={() => {
+                    setShowImportMenu(true);
+                    setShowMobileMenu(false);
+                  }}
+                  className="w-full p-3 flex items-center gap-3 text-white/70 hover:text-white hover:bg-white/10 rounded-lg"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  Import KML
+                </button>
+                <button
                   onClick={logout}
                   className="w-full p-3 flex items-center gap-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg"
                 >
@@ -300,6 +327,12 @@ const Dashboard = () => {
       <ExportMenu 
         isOpen={showExportMenu} 
         onClose={() => setShowExportMenu(false)} 
+      />
+
+      {/* Import Menu Modal */}
+      <ImportKMLMenu 
+        isOpen={showImportMenu} 
+        onClose={() => setShowImportMenu(false)} 
       />
 
       {/* Emergent Branding */}
