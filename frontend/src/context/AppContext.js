@@ -19,6 +19,7 @@ const DEFAULT_SETTINGS = {
   arPinRange: 610, // Range in meters (2000ft = ~610m)
   mapType: 'satellite', // 'satellite' or 'street'
   compassCalibration: 0, // Manual fine-tune offset in degrees. Landscape/portrait is auto-corrected now; tweak only if your device's magnetometer is off.
+  autoCompassCorrection: true, // Auto-remap beta/gamma + add screen-rotation offset to heading. Disable to use raw sensor values.
   screenOrientation: 'landscape', // 'portrait' or 'landscape'
   showEmergentBranding: true, // Show "Made with Emergent" badge
   emergentBrandingPosition: 'bottom-right', // 'bottom-right', 'bottom-left', 'bottom-center', 'top-right', 'top-left'

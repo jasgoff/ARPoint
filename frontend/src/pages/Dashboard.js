@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useApp } from '@/context/AppContext';
@@ -21,6 +21,13 @@ const Dashboard = () => {
   const [showImportMenu, setShowImportMenu] = useState(false);
   const [showLocationSearch, setShowLocationSearch] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+
+  // Live ref to auto-correction toggle so the orientation handler always reads
+  // the current setting without needing to re-bind listeners.
+  const autoCorrectRef = useRef(settings.autoCompassCorrection !== false);
+  useEffect(() => {
+    autoCorrectRef.current = settings.autoCompassCorrection !== false;
+  }, [settings.autoCompassCorrection]);
 
   // Optional auth check - no longer required
   // Users can use the app without authentication
@@ -113,8 +120,11 @@ const Dashboard = () => {
 
     if (window.DeviceOrientationEvent) {
       const buildHandler = (preferAbsolute) => (event) => {
-        const screenAngle = getScreenAngle();
-        const remapped = remapTilt(event.beta || 0, event.gamma || 0, screenAngle);
+        const autoCorrect = autoCorrectRef.current;
+        const screenAngle = autoCorrect ? getScreenAngle() : 0;
+        const remapped = autoCorrect
+          ? remapTilt(event.beta || 0, event.gamma || 0, screenAngle)
+          : { beta: event.beta || 0, gamma: event.gamma || 0 };
 
         setOrientation({
           alpha: event.alpha || 0,

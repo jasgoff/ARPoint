@@ -119,10 +119,54 @@ const SettingsView = () => {
               <div className="flex-1">
                 <Label className="text-white font-medium">Compass Calibration</Label>
                 <p className="text-xs text-white/40 mt-0.5">
-                  Manual fine-tune: {settings.compassCalibration ?? 0}° offset
+                  Manual fine-tune offset
                 </p>
               </div>
             </div>
+
+            {/* Auto-correction toggle */}
+            <div className="flex items-center justify-between w-full mb-3 px-1">
+              <div className="flex-1 pr-3">
+                <Label className="text-white text-sm font-medium">Auto-correct for screen rotation</Label>
+                <p className="text-xs text-white/40 mt-0.5">
+                  Remaps tilt + adds screen angle so the compass works in portrait & landscape. Turn off to use raw sensor values.
+                </p>
+              </div>
+              <Switch
+                checked={settings.autoCompassCorrection !== false}
+                onCheckedChange={(checked) => updateSettings({ autoCompassCorrection: checked })}
+                data-testid="auto-compass-correction-toggle"
+              />
+            </div>
+
+            {/* Numeric text entry */}
+            <div className="flex items-center gap-2 w-full mb-2">
+              <Label className="text-xs text-white/60 whitespace-nowrap">Offset (°)</Label>
+              <input
+                type="number"
+                min="-180"
+                max="180"
+                step="0.1"
+                value={settings.compassCalibration ?? 0}
+                onChange={(e) => {
+                  const v = e.target.value === '' ? 0 : Number(e.target.value);
+                  if (!Number.isNaN(v)) {
+                    updateSettings({ compassCalibration: Math.max(-180, Math.min(180, v)) });
+                  }
+                }}
+                className="flex-1 bg-black/40 border border-white/20 rounded px-2 py-1 text-white text-sm font-mono focus:outline-none focus:border-[#FF4500]"
+                data-testid="compass-calibration-input"
+              />
+              <button
+                type="button"
+                onClick={() => updateSettings({ compassCalibration: 0 })}
+                className="text-xs text-[#FF4500] hover:text-[#FF6B35] underline px-2"
+                data-testid="compass-calibration-reset-btn"
+              >
+                Reset
+              </button>
+            </div>
+
             <input
               type="range"
               min="-180"
@@ -140,18 +184,9 @@ const SettingsView = () => {
             </div>
             <div className="mt-2 p-2 bg-[#FF4500]/10 rounded-lg w-full">
               <p className="text-xs text-white/60">
-                Heading now uses the device magnetometer (true compass) directly, and
-                portrait/landscape orientation is auto-corrected. Leave at <strong>0°</strong>
-                unless your phone's compass reads consistently off — then nudge to align.
+                With auto-correction ON, heading uses the device magnetometer and portrait/landscape is handled automatically — leave offset at <strong>0°</strong>.
+                With it OFF, you may need to set the offset to <strong>-90°</strong> (landscape) or <strong>0°</strong> (portrait) manually.
               </p>
-              <button
-                type="button"
-                onClick={() => updateSettings({ compassCalibration: 0 })}
-                className="mt-2 text-xs text-[#FF4500] hover:text-[#FF6B35] underline"
-                data-testid="compass-calibration-reset-btn"
-              >
-                Reset to 0°
-              </button>
             </div>
           </div>
         )}
