@@ -127,21 +127,25 @@ export const mergeImportedPins = (existingPins, importedPins, options = {}) => {
     skipDuplicates = true // Skip pins with same coordinates
   } = options;
 
+  // Ensure arrays exist
+  const existing = Array.isArray(existingPins) ? existingPins : [];
+  const imported = Array.isArray(importedPins) ? importedPins : [];
+
   if (replace) {
-    return importedPins;
+    return imported;
   }
 
   if (!merge) {
-    return existingPins;
+    return existing;
   }
 
-  const merged = [...existingPins];
+  const merged = [...existing];
   
-  for (const importedPin of importedPins) {
+  for (const importedPin of imported) {
     // Check for duplicates (same location within ~1 meter)
-    const isDuplicate = existingPins.some(existing => {
-      const latDiff = Math.abs(existing.latitude - importedPin.latitude);
-      const lonDiff = Math.abs(existing.longitude - importedPin.longitude);
+    const isDuplicate = existing.some(existingPin => {
+      const latDiff = Math.abs(existingPin.latitude - importedPin.latitude);
+      const lonDiff = Math.abs(existingPin.longitude - importedPin.longitude);
       return latDiff < 0.00001 && lonDiff < 0.00001; // ~1 meter
     });
 
@@ -157,6 +161,10 @@ export const getKMLStats = (kmlText) => {
   try {
     const pins = parseKML(kmlText);
     
+    if (!Array.isArray(pins) || pins.length === 0) {
+      return null;
+    }
+    
     return {
       totalPins: pins.length,
       hasNames: pins.filter(p => p.name && p.name !== 'Pin').length,
@@ -165,15 +173,18 @@ export const getKMLStats = (kmlText) => {
       bounds: getBounds(pins)
     };
   } catch (error) {
+    console.error('Error getting KML stats:', error);
     return null;
   }
 };
 
 const getBounds = (pins) => {
-  if (pins.length === 0) return null;
+  if (!Array.isArray(pins) || pins.length === 0) return null;
 
-  const lats = pins.map(p => p.latitude);
-  const lons = pins.map(p => p.longitude);
+  const lats = pins.map(p => p.latitude).filter(lat => !isNaN(lat));
+  const lons = pins.map(p => p.longitude).filter(lon => !isNaN(lon));
+
+  if (lats.length === 0 || lons.length === 0) return null;
 
   return {
     north: Math.max(...lats),
