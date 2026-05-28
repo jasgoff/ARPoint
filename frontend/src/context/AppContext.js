@@ -95,6 +95,12 @@ export const AppProvider = ({ children }) => {
     saveToStorage(STORAGE_KEYS.PINS, pins);
   }, [getPins, saveToStorage]);
 
+  const setPins = useCallback((newPins) => {
+    // Bulk set pins (for import functionality)
+    const pinsArray = Array.isArray(newPins) ? newPins : [];
+    saveToStorage(STORAGE_KEYS.PINS, pinsArray);
+  }, [saveToStorage]);
+
   // Trace management
   const getTraces = useCallback(() => {
     return loadFromStorage(STORAGE_KEYS.TRACES, []);
@@ -228,6 +234,7 @@ export const AppProvider = ({ children }) => {
     getPins,
     addPin,
     deletePin,
+    setPins,  // Added for bulk import
     getTraces,
     addTrace,
     deleteTrace,
