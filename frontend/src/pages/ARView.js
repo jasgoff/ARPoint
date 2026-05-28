@@ -403,7 +403,7 @@ const ARView = () => {
             <Compass3D 
               heading={heading} 
               orientation={orientation}
-              calibrationOffset={settings.compassCalibration || -90}
+              calibrationOffset={settings.compassCalibration ?? 0}
             />
           </div>
         )}

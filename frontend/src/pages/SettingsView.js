@@ -119,7 +119,7 @@ const SettingsView = () => {
               <div className="flex-1">
                 <Label className="text-white font-medium">Compass Calibration</Label>
                 <p className="text-xs text-white/40 mt-0.5">
-                  Adjust compass orientation: {settings.compassCalibration || -90}° offset
+                  Manual fine-tune: {settings.compassCalibration ?? 0}° offset
                 </p>
               </div>
             </div>
@@ -127,10 +127,11 @@ const SettingsView = () => {
               type="range"
               min="-180"
               max="180"
-              step="15"
-              value={settings.compassCalibration || -90}
+              step="1"
+              value={settings.compassCalibration ?? 0}
               onChange={(e) => updateSettings({ compassCalibration: Number(e.target.value) })}
               className="w-full accent-[#FF4500]"
+              data-testid="compass-calibration-slider"
             />
             <div className="flex justify-between w-full text-xs text-white/40 mt-1">
               <span>-180°</span>
@@ -139,10 +140,18 @@ const SettingsView = () => {
             </div>
             <div className="mt-2 p-2 bg-[#FF4500]/10 rounded-lg w-full">
               <p className="text-xs text-white/60">
-                💡 <strong>Landscape mode:</strong> -90° (default)<br/>
-                💡 <strong>Portrait mode:</strong> 0°<br/>
-                💡 Adjust if compass doesn't align with device direction
+                Heading now uses the device magnetometer (true compass) directly, and
+                portrait/landscape orientation is auto-corrected. Leave at <strong>0°</strong>
+                unless your phone's compass reads consistently off — then nudge to align.
               </p>
+              <button
+                type="button"
+                onClick={() => updateSettings({ compassCalibration: 0 })}
+                className="mt-2 text-xs text-[#FF4500] hover:text-[#FF6B35] underline"
+                data-testid="compass-calibration-reset-btn"
+              >
+                Reset to 0°
+              </button>
             </div>
           </div>
         )}

@@ -18,10 +18,11 @@ const DEFAULT_SETTINGS = {
   showARPins: true, // New: toggle AR pin markers
   arPinRange: 610, // Range in meters (2000ft = ~610m)
   mapType: 'satellite', // 'satellite' or 'street'
-  compassCalibration: -90, // Compass offset in degrees (default -90 for landscape back-camera-forward)
+  compassCalibration: 0, // Manual fine-tune offset in degrees. Landscape/portrait is auto-corrected now; tweak only if your device's magnetometer is off.
   screenOrientation: 'landscape', // 'portrait' or 'landscape'
   showEmergentBranding: true, // Show "Made with Emergent" badge
-  emergentBrandingPosition: 'bottom-right' // 'bottom-right', 'bottom-left', 'bottom-center', 'top-right', 'top-left'
+  emergentBrandingPosition: 'bottom-right', // 'bottom-right', 'bottom-left', 'bottom-center', 'top-right', 'top-left'
+  compassCalibrationMigrated: false // Internal flag: one-time reset of legacy -90 default
 };
 
 export const AppProvider = ({ children }) => {
@@ -49,7 +50,19 @@ export const AppProvider = ({ children }) => {
   const [settings, setSettings] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-      return saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
+      if (!saved) return DEFAULT_SETTINGS;
+      const parsed = JSON.parse(saved);
+      // One-time migration: legacy default of -90 (manual landscape hack) is no
+      // longer needed since Dashboard now auto-corrects based on screen rotation.
+      if (!parsed.compassCalibrationMigrated && parsed.compassCalibration === -90) {
+        parsed.compassCalibration = 0;
+        parsed.compassCalibrationMigrated = true;
+        localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(parsed));
+      } else if (!parsed.compassCalibrationMigrated) {
+        parsed.compassCalibrationMigrated = true;
+        localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(parsed));
+      }
+      return { ...DEFAULT_SETTINGS, ...parsed };
     } catch {
       return DEFAULT_SETTINGS;
     }

@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Compass3D = ({ heading = 0, orientation = { alpha: 0, beta: 0, gamma: 0 }, calibrationOffset = -90 }) => {
+const Compass3D = ({ heading = 0, orientation = { alpha: 0, beta: 0, gamma: 0 }, calibrationOffset = 0 }) => {
   // Apply calibration offset and normalize heading to 0-360
   // Default -90 offset rotates compass counter-clockwise 90° for landscape mode
   const calibratedHeading = heading + calibrationOffset;

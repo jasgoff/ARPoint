@@ -29,7 +29,59 @@ const Dashboard = () => {
   // GPS and device orientation setup
   useEffect(() => {
     let watchId = null;
-    let orientationHandler = null;
+    let absHandler = null;
+    let relHandler = null;
+    let hasAbsolute = false; // true once we receive an absolute (true compass) reading
+    let lastGpsHeading = null; // GPS-derived heading (true north when moving)
+
+    // Read current screen rotation angle (0, 90, 180, 270)
+    const getScreenAngle = () => {
+      if (window.screen && window.screen.orientation && typeof window.screen.orientation.angle === 'number') {
+        return window.screen.orientation.angle;
+      }
+      if (typeof window.orientation === 'number') {
+        return ((window.orientation % 360) + 360) % 360;
+      }
+      return 0;
+    };
+
+    // Remap device-frame beta/gamma to physical-world tilt based on screen rotation.
+    // - "betaOut" = forward/back tilt (positive = top of device tilts toward user)
+    // - "gammaOut" = side-to-side tilt (positive = right side of device tilts down)
+    const remapTilt = (beta, gamma, screenAngle) => {
+      switch (screenAngle) {
+        case 90:  // landscape-left (home button on right, on most Android)
+          return { beta: -gamma, gamma: beta };
+        case 180: // portrait upside down
+          return { beta: -beta, gamma: -gamma };
+        case 270: // landscape-right
+          return { beta: gamma, gamma: -beta };
+        case 0:
+        default:  // portrait
+          return { beta, gamma };
+      }
+    };
+
+    // Resolve the most accurate compass heading available from an event.
+    // Returns null if no absolute heading can be derived from this event.
+    const resolveHeading = (event) => {
+      // iOS Safari: webkitCompassHeading is degrees clockwise from true north
+      if (typeof event.webkitCompassHeading === 'number' && !Number.isNaN(event.webkitCompassHeading)) {
+        return event.webkitCompassHeading;
+      }
+      // Android Chrome / spec-compliant: deviceorientationabsolute or absolute===true
+      // alpha is degrees counter-clockwise from north -> convert
+      if (event.absolute === true && typeof event.alpha === 'number') {
+        return (360 - event.alpha) % 360;
+      }
+      return null;
+    };
+
+    // Combine device compass with screen rotation so heading reflects where the
+    // top of the *device chassis* (back-camera up axis) is pointing.
+    const applyScreenOffset = (compassDeg, screenAngle) => {
+      return ((compassDeg + screenAngle) % 360 + 360) % 360;
+    };
 
     if ('geolocation' in navigator) {
       watchId = navigator.geolocation.watchPosition(
@@ -40,8 +92,10 @@ const Dashboard = () => {
           });
           setAltitude(pos.coords.altitude || 0);
           setAccuracy(pos.coords.accuracy);
-          if (pos.coords.heading !== null) {
-            setHeading(pos.coords.heading);
+          // Use GPS heading only when device sensor compass is unavailable
+          if (pos.coords.heading !== null && !Number.isNaN(pos.coords.heading)) {
+            lastGpsHeading = pos.coords.heading;
+            if (!hasAbsolute) setHeading(pos.coords.heading);
           }
           setGpsStatus('active');
         },
@@ -58,37 +112,52 @@ const Dashboard = () => {
     }
 
     if (window.DeviceOrientationEvent) {
-      orientationHandler = (event) => {
+      const buildHandler = (preferAbsolute) => (event) => {
+        const screenAngle = getScreenAngle();
+        const remapped = remapTilt(event.beta || 0, event.gamma || 0, screenAngle);
+
         setOrientation({
           alpha: event.alpha || 0,
-          beta: event.beta || 0,
-          gamma: event.gamma || 0
+          beta: remapped.beta,
+          gamma: remapped.gamma
         });
-        if (event.alpha !== null && event.webkitCompassHeading === undefined) {
-          setHeading(event.alpha);
-        } else if (event.webkitCompassHeading !== undefined) {
-          setHeading(event.webkitCompassHeading);
+
+        const absHeading = resolveHeading(event);
+        if (absHeading !== null) {
+          hasAbsolute = true;
+          setHeading(applyScreenOffset(absHeading, screenAngle));
+        } else if (!hasAbsolute && preferAbsolute === false && typeof event.alpha === 'number') {
+          // Relative-only fallback (e.g., desktop / older Android). NOT true north,
+          // but better than nothing. Convert to clockwise-from-zero.
+          const relative = (360 - event.alpha) % 360;
+          setHeading(applyScreenOffset(relative, screenAngle));
         }
+      };
+
+      absHandler = buildHandler(true);
+      relHandler = buildHandler(false);
+
+      const attachListeners = () => {
+        // Prefer the absolute event; many Android Chrome builds only emit on this one.
+        window.addEventListener('deviceorientationabsolute', absHandler, true);
+        window.addEventListener('deviceorientation', relHandler, true);
       };
 
       if (typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission()
           .then(response => {
-            if (response === 'granted') {
-              window.addEventListener('deviceorientation', orientationHandler);
-            }
+            if (response === 'granted') attachListeners();
           })
           .catch(console.error);
       } else {
-        window.addEventListener('deviceorientation', orientationHandler);
+        attachListeners();
       }
     }
 
     return () => {
       if (watchId) navigator.geolocation.clearWatch(watchId);
-      if (orientationHandler) {
-        window.removeEventListener('deviceorientation', orientationHandler);
-      }
+      if (absHandler) window.removeEventListener('deviceorientationabsolute', absHandler, true);
+      if (relHandler) window.removeEventListener('deviceorientation', relHandler, true);
     };
   }, [setPosition, setHeading, setAltitude, setAccuracy, setOrientation]);
 
