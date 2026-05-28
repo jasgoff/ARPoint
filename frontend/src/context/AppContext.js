@@ -21,8 +21,9 @@ const DEFAULT_SETTINGS = {
   compassCalibration: 0, // Manual fine-tune offset in degrees. Landscape/portrait is auto-corrected now; tweak only if your device's magnetometer is off.
   autoCompassCorrection: true, // Auto-remap beta/gamma + add screen-rotation offset to heading. Disable to use raw sensor values.
   screenOrientation: 'landscape', // 'portrait' or 'landscape'
-  showEmergentBranding: true, // Show "Made with Emergent" badge
+  showEmergentBranding: false, // Show "Made with Emergent" badge (hidden by default; user can enable in settings)
   emergentBrandingPosition: 'bottom-right', // 'bottom-right', 'bottom-left', 'bottom-center', 'top-right', 'top-left'
+  emergentBrandingMigrated: false, // Internal flag: one-time flip of legacy true default
   compassCalibrationMigrated: false // Internal flag: one-time reset of legacy -90 default
 };
 
@@ -61,6 +62,12 @@ export const AppProvider = ({ children }) => {
         localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(parsed));
       } else if (!parsed.compassCalibrationMigrated) {
         parsed.compassCalibrationMigrated = true;
+        localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(parsed));
+      }
+      // One-time migration: hide the Emergent badge by default for everyone.
+      if (!parsed.emergentBrandingMigrated) {
+        parsed.showEmergentBranding = false;
+        parsed.emergentBrandingMigrated = true;
         localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(parsed));
       }
       return { ...DEFAULT_SETTINGS, ...parsed };
